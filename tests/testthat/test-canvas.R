@@ -38,13 +38,61 @@ test_that("remove_token_at drops a gap chip and its item", {
   expect_lt(length(ex2$items), n_items)
 })
 
+broken_quoted_attr <- function(html) {
+  grepl('="[^"]*"[^\\s>=]', html, perl = TRUE)
+}
+
 test_that("canvas chips do not use native HTML5 draggable", {
   html <- canvas_token_html(tokenize_question(example_exercise()$question))
   expect_false(grepl("draggable=\"true\"", html, fixed = TRUE))
   expect_match(html, "ws-canvas")
   expect_match(html, "tok-x")
-  expect_match(html, "studioDelete", fixed = TRUE)
-  expect_match(html, "studioSelect", fixed = TRUE)
+  expect_match(html, "data-delete=", fixed = TRUE)
+  expect_match(html, "data-kind=", fixed = TRUE)
+  expect_false(grepl("onclick=", html, fixed = TRUE))
+})
+
+test_that("math chips keep quoted text in data-text, not in onclick", {
+  html <- canvas_token_html(list(list(kind = "math", text = "{a} + {b}")))
+  expect_false(broken_quoted_attr(html))
+  expect_false(grepl("onclick=", html, fixed = TRUE))
+  expect_match(html, 'data-text="{a} + {b}"', fixed = TRUE)
+  expect_match(html, "data-delete=\"1\"", fixed = TRUE)
+})
+
+test_that("text chips are deletable without being the editable node", {
+  html <- canvas_token_html(list(list(kind = "text", text = "Hallo")))
+  expect_match(html, "tok-edit", fixed = TRUE)
+  expect_match(html, "data-delete=\"1\"", fixed = TRUE)
+  expect_match(html, "contenteditable=\"true\"", fixed = TRUE)
+})
+
+test_that("default example exposes variable chips on the canvas", {
+  toks <- tokenize_question(example_exercise()$question)
+  names <- vapply(toks, function(t) t$name %||% "", character(1))
+  expect_true("a" %in% names)
+  expect_true("b" %in% names)
+  expect_false(any(vapply(toks, function(t) identical(t$kind, "math"), logical(1))))
+})
+
+test_that("dropping math records a usable token index", {
+  ex <- new_exercise(question = "Summe: ")
+  res <- apply_palette_drop(ex, "math", index = 2L)
+  expect_equal(res$selection$kind, "math")
+  expect_equal(res$selection$index, 2L)
+  expect_false(is.na(scalar_int(res$selection$index)))
+  expect_true(is.na(scalar_int(NULL)))
+  expect_true(is.na(scalar_int(integer())))
+  expect_equal(scalar_int("6"), 6L)
+})
+
+test_that("dnd.js uses native drag and data-action, not Sortable", {
+  js_path <- normalizePath(file.path(testthat::test_path(), "..", "..", "www", "dnd.js"))
+  js <- paste(readLines(js_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  expect_match(js, "dragstart", fixed = TRUE)
+  expect_match(js, "data-action", fixed = TRUE)
+  expect_match(js, "data-delete", fixed = TRUE)
+  expect_false(grepl("Sortable", js, fixed = TRUE))
 })
 
 test_that("insert and reorder keep all tokens", {

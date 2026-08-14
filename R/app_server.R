@@ -89,15 +89,15 @@ app_server <- function(input, output, session) {
     rv$selection <- list(
       kind = kind,
       name = ev$name,
-      id = suppressWarnings(as.integer(ev$id)),
-      index = suppressWarnings(as.integer(ev$index)),
+      id = scalar_int(ev$id),
+      index = scalar_int(ev$index),
       text = ev$text
     )
   })
 
   shiny::observeEvent(input$ws_text, {
     ev <- input$ws_text
-    idx <- suppressWarnings(as.integer(ev$index))
+    idx <- scalar_int(ev$index)
     toks <- tokenize_question(rv$ex$question)
     if (!is.na(idx) && idx >= 1L && idx <= length(toks) && identical(toks[[idx]]$kind, "text")) {
       toks[[idx]]$text <- ev$text %||% ""
@@ -108,7 +108,7 @@ app_server <- function(input, output, session) {
   })
 
   shiny::observeEvent(input$ws_delete, {
-    idx <- suppressWarnings(as.integer(input$ws_delete$index))
+    idx <- scalar_int(input$ws_delete$index)
     if (is.na(idx)) return()
     set_ex(remove_token_at(rv$ex, idx), list(kind = "none"))
   })
@@ -125,11 +125,9 @@ app_server <- function(input, output, session) {
       shiny::tags$button(
         type = "button",
         class = paste("pal-item", extra_class),
-        onclick = sprintf(
-          "studioDrop(%s,%s)",
-          jsonlite::toJSON(action, auto_unbox = TRUE),
-          jsonlite::toJSON(name, auto_unbox = TRUE)
-        ),
+        `data-action` = action,
+        `data-name` = name,
+        draggable = "true",
         label
       )
     }
@@ -147,16 +145,13 @@ app_server <- function(input, output, session) {
       pal_btn("gap-mchoice", "Lücke: Mehrfachauswahl"),
       pal_btn("math", "Formel"),
       pal_btn("rule", "Bedingung"),
-      if (length(var_chips)) shiny::div(class = "ws-kicker", "Werte — klicken fügt ein"),
+      if (length(var_chips)) shiny::div(class = "ws-kicker", "Werte — ziehen oder klicken"),
       var_chips
     )
   })
 
   output$canvas_ui <- shiny::renderUI({
     html <- canvas_token_html(tokenize_question(rv$ex$question), rv$selection)
-    session$onFlushed(function() {
-      session$sendCustomMessage("ws_ready", 1)
-    }, once = TRUE)
     shiny::HTML(html)
   })
 
@@ -332,7 +327,7 @@ inspector_gap <- function(ex, id) {
         shiny::tags$button(
           type = "button",
           class = "pal-item pal-var",
-          onclick = sprintf("studioAssign(%s)", jsonlite::toJSON(v$name, auto_unbox = TRUE)),
+          `data-assign` = v$name,
           paste0("⟨", v$name, "⟩")
         )
       })
@@ -548,14 +543,14 @@ bind_inspector_events <- function(input, session, rv) {
 
   shiny::observeEvent(input$insp_math, {
     if (!identical(rv$selection$kind, "math")) return()
-    idx <- rv$selection$index
+    idx <- scalar_int(rv$selection$index)
     toks <- tokenize_question(rv$ex$question)
-    if (!is.na(idx) && idx >= 1L && idx <= length(toks) && identical(toks[[idx]]$kind, "math")) {
-      toks[[idx]]$text <- gsub("^\\$|\\$$", "", input$insp_math %||% "")
-      ex <- rv$ex
-      ex$question <- tokens_to_question(toks)
-      rv$ex <- ex
-    }
+    if (is.na(idx) || idx < 1L || idx > length(toks)) return()
+    if (!identical(toks[[idx]]$kind, "math")) return()
+    toks[[idx]]$text <- gsub("^\\$|\\$$", "", input$insp_math %||% "")
+    ex <- rv$ex
+    ex$question <- tokens_to_question(toks)
+    rv$ex <- ex
   }, ignoreInit = TRUE)
 
   shiny::observeEvent(input$do_preview, {

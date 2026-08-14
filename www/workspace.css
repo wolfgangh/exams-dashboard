@@ -15,6 +15,7 @@ html, body { height: 100%; overflow: hidden; }
 .ws-field-btn { justify-content: flex-end; }
 .ws-export { display: flex; gap: 0.3rem; }
 .ws-brand { font-weight: 700; letter-spacing: .02em; margin-right: 0.3rem; white-space: nowrap; align-self: center; }
+.ws-build { font-size: 0.68rem; color: #a9cce3; align-self: center; margin-right: 0.4rem; }
 .ws-top .btn { font-size: 0.82rem; }
 .ws-top .shiny-input-container { margin-bottom: 0; }
 .ws-top .input-group { margin-bottom: 0; }
@@ -41,8 +42,9 @@ html, body { height: 100%; overflow: hidden; }
   display: block; width: 100%; text-align: left;
   border: 1px solid #d5d8dc; background: #fff; border-radius: 8px;
   padding: 0.4rem 0.55rem; margin-bottom: 0.35rem;
-  cursor: pointer; font-size: 0.9rem;
+  cursor: grab; font-size: 0.9rem;
 }
+.pal-item:active { cursor: grabbing; }
 .pal-item:hover { border-color: #1b4f72; background: #eaf2f8; }
 .pal-var { background: #d4e6f1; border-color: #a9cce3; font-weight: 650; }
 .ws-canvas {
@@ -66,10 +68,11 @@ html, body { height: 100%; overflow: hidden; }
 }
 .tok-x:hover { color: #fff; background: #922b21; border-radius: 999px; }
 .tok-text { user-select: text; cursor: text; padding: 0 0.1rem; border-bottom: 1px dotted transparent; }
-.tok-text:hover, .tok-text:focus { border-bottom-color: #1b4f72; outline: none; }
+.tok-edit { outline: none; min-width: 0.4rem; }
+.tok-text:hover, .tok-text:focus-within { border-bottom-color: #1b4f72; }
 .tok-var {
   background: #d4e6f1; color: #1a5276; border-radius: 999px;
-  padding: 0.05rem 0.6rem; font-weight: 650; cursor: grab;
+  padding: 0.05rem 0.6rem; font-weight: 650; cursor: pointer;
 }
 .tok-gap {
   border: 1.5px dashed #1b4f72; border-radius: 8px;

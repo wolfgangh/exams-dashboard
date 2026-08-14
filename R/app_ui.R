@@ -25,6 +25,14 @@ app_ui <- function() {
       shiny::div(
         class = "ws-top",
         shiny::span(class = "ws-brand", "R/exams Studio"),
+        shiny::span(
+          class = "ws-build",
+          title = "Nach Änderungen an R-Dateien die App neu starten — www/ gilt sofort",
+          paste0(
+            "Build ",
+            format(tryCatch(file.info("R/app_server.R")$mtime, error = function(e) Sys.time()), "%H:%M")
+          )
+        ),
         shiny::div(
           class = "ws-field",
           shiny::textInput("meta_title", "Aufgabentitel", value = "Summe zweier Zahlen", width = "220px")
@@ -82,12 +90,12 @@ app_ui <- function() {
         class = "ws-body",
         shiny::div(
           class = "ws-palette",
-          shiny::div(class = "ws-kicker", "Einfügen (Klick)"),
+          shiny::div(class = "ws-kicker", "Einfügen (ziehen oder klicken)"),
           shiny::uiOutput("palette_ui")
         ),
         shiny::div(
           class = "ws-main",
-          shiny::div(class = "ws-kicker", "Aufgabe — links klicken fügt ein · Chip klicken wählt · × oder Entf löscht"),
+          shiny::div(class = "ws-kicker", "Aufgabe — ziehen oder klicken fügt ein · Chip klicken wählt · × oder Entf löscht"),
           shiny::uiOutput("canvas_ui")
         ),
         shiny::div(

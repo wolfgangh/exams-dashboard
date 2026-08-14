@@ -61,14 +61,14 @@ template_exercise <- function(which = c("num", "schoice", "mchoice", "cloze")) {
   )
 
   if (which == "num") {
-    ex$question <- "Berechnen Sie ${a} + {b}$."
+    ex$question <- "Berechnen Sie {a} + {b}."
     ex$solution <- "Addieren Sie die beiden Zahlen: ${a} + {b} = {sol}$."
     ex$items <- list(list(
       id = 1L, type = "num", solution = "sol", digits = 0L, tolerance = 0,
       scale = 1, unit = "", choices = list()
     ))
   } else if (which == "schoice") {
-    ex$question <- "Welches Ergebnis hat ${a} + {b}$?"
+    ex$question <- "Welches Ergebnis hat {a} + {b}?"
     ex$solution <- "Die Summe ist ${sol}$."
     ex$items <- list(list(
       id = 1L, type = "schoice", solution = "sol", digits = 0L, tolerance = NULL,
@@ -81,7 +81,7 @@ template_exercise <- function(which = c("num", "schoice", "mchoice", "cloze")) {
       )
     ))
   } else if (which == "mchoice") {
-    ex$question <- "Welche Aussagen zu $a = {a}$ und $b = {b}$ stimmen?"
+    ex$question <- "Welche Aussagen zu a = {a} und b = {b} stimmen?"
     ex$solution <- "Pruefen Sie jede Aussage anhand der gezogenen Werte."
     ex$items <- list(list(
       id = 1L, type = "mchoice", solution = "", digits = 0L, tolerance = NULL,
@@ -102,9 +102,9 @@ template_exercise <- function(which = c("num", "schoice", "mchoice", "cloze")) {
       ))
     )
     ex$question <- paste0(
-      "Gegeben sind $a = {a}$ und $b = {b}$.\n\n",
-      "- Summe $a + b$ = [[1]]\n",
-      "- Differenz $a - b$ = [[2]]\n",
+      "Gegeben sind a = {a} und b = {b}.\n\n",
+      "- Summe a + b = [[1]]\n",
+      "- Differenz a - b = [[2]]\n",
       "- Die Summe ist [[3]]"
     )
     ex$solution <- "Summe = {sol}, Differenz = {diff}."

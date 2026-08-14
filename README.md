@@ -22,9 +22,11 @@ shiny::runApp()
 
 Eine Fläche, drei Spalten:
 
-- **Links:** Palette — Werte, Lücken, Formel, Bedingung auf die Mitte ziehen
-- **Mitte:** Aufgabe als Text mit Chips, umordnen per Drag-and-Drop, anklicken zum Bearbeiten
+- **Links:** Palette — Werte, Lücken, Formel, Bedingung ziehen oder anklicken
+- **Mitte:** Aufgabe als Text mit Chips; Chip anklicken wählt, × oder Entf löscht
 - **Rechts:** nur die Felder des gewählten Objekts, Live-Vorschau, Ampel für den Werteraum
+
+Nach Änderungen an Dateien unter `R/` die App neu starten (`www/` gilt ohne Neustart).
 
 Kopfzeile: Titel, Punkte, EU/US, Vorlage, Rmd/Moodle/PDF.
 

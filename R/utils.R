@@ -17,6 +17,21 @@ FORBIDDEN_FUNS <- c(
   x
 }
 
+html_attr <- function(x) {
+  x <- as.character(x %||% "")
+  x <- gsub("&", "&amp;", x, fixed = TRUE)
+  x <- gsub("<", "&lt;", x, fixed = TRUE)
+  x <- gsub(">", "&gt;", x, fixed = TRUE)
+  x <- gsub("\"", "&quot;", x, fixed = TRUE)
+  x
+}
+
+scalar_int <- function(x) {
+  v <- suppressWarnings(as.integer(x))
+  if (!length(v) || is.na(v[[1]])) return(NA_integer_)
+  v[[1]]
+}
+
 is_valid_name <- function(x) {
   is.character(x) && length(x) == 1L && grepl("^[A-Za-z][A-Za-z0-9_]*$", x)
 }

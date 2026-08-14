@@ -99,7 +99,9 @@ apply_palette_drop <- function(ex, action, index = 1L, name = NULL) {
     selection <- list(kind = "gap", id = as.integer(it$id))
   } else if (identical(action, "math")) {
     tokens <- insert_token_at(tokens, index, list(kind = "math", text = "a + b"))
-    selection <- list(kind = "math")
+    inserted <- scalar_int(index)
+    if (is.na(inserted)) inserted <- length(tokens) else inserted <- min(max(inserted, 1L), length(tokens))
+    selection <- list(kind = "math", index = inserted, text = "a + b")
   } else if (identical(action, "rule")) {
     if (!length(ex$variables)) {
       ex <- add_variable(ex, "a", kind = "integer")
@@ -111,7 +113,9 @@ apply_palette_drop <- function(ex, action, index = 1L, name = NULL) {
     return(list(ex = ex, selection = selection))
   } else if (identical(action, "text")) {
     tokens <- insert_token_at(tokens, index, list(kind = "text", text = " "))
-    selection <- list(kind = "text")
+    inserted <- scalar_int(index)
+    if (is.na(inserted)) inserted <- length(tokens) else inserted <- min(max(inserted, 1L), length(tokens))
+    selection <- list(kind = "text", index = inserted)
   }
   ex$question <- tokens_to_question(tokens)
   list(ex = ex, selection = selection)
@@ -175,49 +179,36 @@ remove_variable_from_question <- function(ex, name) {
 
 canvas_token_html <- function(tokens, selection = list(kind = "none")) {
   if (!length(tokens)) {
-    return("<div id=\"ws-canvas\" class=\"ws-canvas is-empty\">Text schreiben oder etwas von links hierher ziehen.</div>")
+    return(paste0(
+      "<div id=\"ws-canvas\" class=\"ws-canvas is-empty\">",
+      "Text schreiben, links klicken oder etwas hierher ziehen.",
+      "</div>"
+    ))
   }
   bits <- vapply(seq_along(tokens), function(i) {
     tok <- tokens[[i]]
     sel <- token_is_selected(tok, i, selection)
     cls <- paste("tok", paste0("tok-", tok$kind), if (sel) "is-selected" else "")
+    xbtn <- sprintf(
+      "<button type=\"button\" class=\"tok-x\" data-delete=\"%s\" aria-label=\"Entfernen\">×</button>",
+      i
+    )
     switch(tok$kind,
       var = sprintf(
-        paste0(
-          "<span class=\"%s\" data-kind=\"var\" data-name=\"%s\" data-i=\"%s\" title=\"Variable %s\" ",
-          "onclick=\"if(!event.target.closest('.tok-x')) studioSelect('var',{name:'%s',index:%s})\">",
-          "⟨%s⟩",
-          "<button type=\"button\" class=\"tok-x\" aria-label=\"Entfernen\" onclick=\"event.stopPropagation();studioDelete(%s)\">×</button>",
-          "</span>"
-        ),
-        cls, html_escape(tok$name), i, html_escape(tok$name),
-        html_escape(tok$name), i, html_escape(tok$name), i
+        "<span class=\"%s\" data-kind=\"var\" data-name=\"%s\" data-i=\"%s\" title=\"Variable %s\">⟨%s⟩%s</span>",
+        cls, html_attr(tok$name), i, html_attr(tok$name), html_attr(tok$name), xbtn
       ),
       gap = sprintf(
-        paste0(
-          "<span class=\"%s\" data-kind=\"gap\" data-id=\"%s\" data-i=\"%s\" ",
-          "onclick=\"if(!event.target.closest('.tok-x')) studioSelect('gap',{id:%s,index:%s})\">",
-          "Lücke %s",
-          "<button type=\"button\" class=\"tok-x\" aria-label=\"Entfernen\" onclick=\"event.stopPropagation();studioDelete(%s)\">×</button>",
-          "</span>"
-        ),
-        cls, as.integer(tok$id), i, as.integer(tok$id), i, as.integer(tok$id), i
+        "<span class=\"%s\" data-kind=\"gap\" data-id=\"%s\" data-i=\"%s\">Lücke %s%s</span>",
+        cls, as.integer(tok$id), i, as.integer(tok$id), xbtn
       ),
       math = sprintf(
-        paste0(
-          "<span class=\"%s\" data-kind=\"math\" data-text=\"%s\" data-i=\"%s\" ",
-          "onclick=\"if(!event.target.closest('.tok-x')) studioSelect('math',{index:%s,text:%s})\">",
-          "$%s$",
-          "<button type=\"button\" class=\"tok-x\" aria-label=\"Entfernen\" onclick=\"event.stopPropagation();studioDelete(%s)\">×</button>",
-          "</span>"
-        ),
-        cls, html_escape(tok$text %||% ""), i, i,
-        jsonlite::toJSON(tok$text %||% "", auto_unbox = TRUE),
-        html_escape(tok$text %||% ""), i
+        "<span class=\"%s\" data-kind=\"math\" data-text=\"%s\" data-i=\"%s\">$%s$%s</span>",
+        cls, html_attr(tok$text %||% ""), i, html_escape(tok$text %||% ""), xbtn
       ),
       sprintf(
-        "<span class=\"%s\" contenteditable=\"true\" data-kind=\"text\" data-i=\"%s\">%s</span>",
-        cls, i, html_escape(tok$text %||% "")
+        "<span class=\"%s\" data-kind=\"text\" data-i=\"%s\"><span class=\"tok-edit\" contenteditable=\"true\">%s</span>%s</span>",
+        cls, i, html_escape(tok$text %||% ""), xbtn
       )
     )
   }, character(1))
