@@ -1,0 +1,7 @@
+^app\.R$
+^README\.md$
+^\.gitignore$
+^\.Rproj\.user$
+^\.git$
+^docs$
+^LICENSE$

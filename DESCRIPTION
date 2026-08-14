@@ -1,0 +1,33 @@
+Package: examsstudio
+Title: Visual Authoring Studio for R/exams Exercises
+Version: 0.1.0
+Authors@R: person("Wolfgang", "Hößl",
+                    email = "wolfgang.hoessl@oth-regensburg.de",
+                    role = c("aut", "cre"))
+Description: Shiny dashboard for composing dynamic R/exams exercises
+    (num, schoice, mchoice, cloze) with variable grids, plausibility
+    checks, EU/US number formatting, and Moodle/PDF export. Uses the
+    modern add_cloze() / format_metainfo() syntax.
+License: GPL-3
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Imports:
+    exams (>= 2.4.0),
+    shiny (>= 1.8.0),
+    bslib (>= 0.6.0),
+    plotly,
+    DT,
+    yaml,
+    jsonlite,
+    htmltools,
+    knitr,
+    rmarkdown,
+    stats,
+    utils
+Suggests:
+    testthat (>= 3.0.0),
+    exams2forms,
+    tinytex,
+    withr
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2

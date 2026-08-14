@@ -1,0 +1,44 @@
+<!-- examsstudio-v1: c2NoZW1hOiBleGFtc3N0dWRpby92MQptZXRhOgogIG5hbWU6IHN1bW1lLWRpZmZlcmVuegogIHRpdGxlOiBTdW1tZSB1bmQgRGlmZmVyZW56CiAgdHlwZTogY2xvemUKICBwb2ludHM6IDEuMAogIHNlY3Rpb246ICcnCiAgbG9jYWxlOiBFVQpxdWVzdGlvbjogfC0KICBHZWdlYmVuIHNpbmQgJGEgPSB7YX0kIHVuZCAkYiA9IHtifSQuCgogIC0gU3VtbWUgJGEgKyBiJCA9IFtbMV1dCiAgLSBEaWZmZXJlbnogJGEgLSBiJCA9IFtbMl1dCiAgLSBEaWUgU3VtbWUgaXN0IFtbM11dCnNvbHV0aW9uOiBTdW1tZSA9IHtzb2x9LCBEaWZmZXJlbnogPSB7ZGlmZn0uCnZhcmlhYmxlczoKLSBuYW1lOiBhCiAga2luZDogaW50ZWdlcgogIG1pbjogNC4wCiAgbWF4OiAxMi4wCiAgc3RlcDogMS4wCiAgdmFsdWVzOiB+CiAgZXhwcjogfgogIGRpZ2l0czogMAotIG5hbWU6IGIKICBraW5kOiBpbnRlZ2VyCiAgbWluOiAyLjAKICBtYXg6IDkuMAogIHN0ZXA6IDEuMAogIHZhbHVlczogfgogIGV4cHI6IH4KICBkaWdpdHM6IDAKLSBuYW1lOiBzb2wKICBraW5kOiBkZXJpdmVkCiAgbWluOiAubmEKICBtYXg6IC5uYQogIHN0ZXA6IC5uYQogIHZhbHVlczogfgogIGV4cHI6IGEgKyBiCiAgZGlnaXRzOiAwCi0gbmFtZTogZGlmZgogIGtpbmQ6IGRlcml2ZWQKICBtaW46IC5uYQogIG1heDogLm5hCiAgc3RlcDogLm5hCiAgdmFsdWVzOiB+CiAgZXhwcjogYSAtIGIKICBkaWdpdHM6IDAKcnVsZXM6Ci0gaWQ6IHIxCiAgbGFiZWw6IGEgaXN0IGdyb2Vzc2VyIGFscyBiCiAgZXhwcjogYSA+IGIKaXRlbXM6Ci0gaWQ6IDEKICB0eXBlOiBudW0KICBzb2x1dGlvbjogc29sCiAgZGlnaXRzOiAwCiAgdG9sZXJhbmNlOiAwLjAKICBjaG9pY2VzOiBbXQotIGlkOiAyCiAgdHlwZTogbnVtCiAgc29sdXRpb246IGRpZmYKICBkaWdpdHM6IDAKICB0b2xlcmFuY2U6IDAuMAogIGNob2ljZXM6IFtdCi0gaWQ6IDMKICB0eXBlOiBzY2hvaWNlCiAgc29sdXRpb246ICcnCiAgZGlnaXRzOiAwCiAgdG9sZXJhbmNlOiB+CiAgY2hvaWNlczoKICAtIHRleHQ6IGdlcmFkZQogICAgY29ycmVjdDogbm8KICAgIGNvcnJlY3RfZXhwcjogKGEgKyBiKSAlJSAyID09IDAKICAgIGR5bmFtaWM6IG5vCiAgLSB0ZXh0OiB1bmdlcmFkZQogICAgY29ycmVjdDogbm8KICAgIGNvcnJlY3RfZXhwcjogKGEgKyBiKSAlJSAyID09IDEKICAgIGR5bmFtaWM6IG5vCg== -->
+```{r data, include=FALSE}
+exams::initialize_exercise()
+.fmt <- function(x, digits = 2) exams::fmt(x, digits = digits, decimal.mark = ",", big.mark = ".")
+.locale <- "EU"
+.ok <- FALSE
+for (.try in seq_len(10000L)) {
+  a <- sample(seq(4, 12, by = 1), 1)
+  b <- sample(seq(2, 9, by = 1), 1)
+  sol <- a + b
+  diff <- a - b
+  if (isTRUE(a > b)) { .ok <- TRUE; break }
+}
+if (!.ok) stop("Keine gueltige Variablenkombination gefunden.")
+.lab_3 <- c("gerade", "ungerade")
+.ok_3 <- c(isTRUE((a + b) %% 2 == 0), isTRUE((a + b) %% 2 == 1))
+names(.ok_3) <- .lab_3
+.sol_3 <- .lab_3[which(.ok_3)[1]]
+```
+
+Question
+========
+Gegeben sind $a = `r .fmt(a, 0)`$ und $b = `r .fmt(b, 0)`$.
+
+- Summe $a + b$ = `r exams::add_cloze(sol, tolerance = 0, digits = 0)`
+- Differenz $a - b$ = `r exams::add_cloze(diff, tolerance = 0, digits = 0)`
+- Die Summe ist `r exams::add_cloze(.sol_3, .lab_3, type = "schoice")`
+
+Answerlist
+----------
+`r exams::format_metainfo("answerlist")`
+
+Solution
+========
+Summe = `r .fmt(sol, 0)`, Differenz = `r .fmt(diff, 0)`.
+
+Meta-information
+================
+exname: summe-differenz
+extype: `r exams::format_metainfo("type")`
+exsolution: `r exams::format_metainfo("solution")`
+extol: `r exams::format_metainfo("tolerance")`
+expoints: 1
+

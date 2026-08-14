@@ -1,0 +1,38 @@
+<!-- examsstudio-v1: c2NoZW1hOiBleGFtc3N0dWRpby92MQptZXRhOgogIG5hbWU6IHN1bW1lCiAgdGl0bGU6IFN1bW1lIHp3ZWllciBaYWhsZW4KICB0eXBlOiBudW0KICBwb2ludHM6IDEuMAogIHNlY3Rpb246ICcnCiAgbG9jYWxlOiBFVQpxdWVzdGlvbjogQmVyZWNobmVuIFNpZSAke2F9ICsge2J9JC4Kc29sdXRpb246ICdBZGRpZXJlbiBTaWUgZGllIGJlaWRlbiBaYWhsZW46ICR7YX0gKyB7Yn0gPSB7c29sfSQuJwp2YXJpYWJsZXM6Ci0gbmFtZTogYQogIGtpbmQ6IGludGVnZXIKICBtaW46IDQuMAogIG1heDogMTIuMAogIHN0ZXA6IDEuMAogIHZhbHVlczogfgogIGV4cHI6IH4KICBkaWdpdHM6IDAKLSBuYW1lOiBiCiAga2luZDogaW50ZWdlcgogIG1pbjogMi4wCiAgbWF4OiA5LjAKICBzdGVwOiAxLjAKICB2YWx1ZXM6IH4KICBleHByOiB+CiAgZGlnaXRzOiAwCi0gbmFtZTogc29sCiAga2luZDogZGVyaXZlZAogIG1pbjogLm5hCiAgbWF4OiAubmEKICBzdGVwOiAubmEKICB2YWx1ZXM6IH4KICBleHByOiBhICsgYgogIGRpZ2l0czogMApydWxlczoKLSBpZDogcjEKICBsYWJlbDogYSBpc3QgZ3JvZXNzZXIgYWxzIGIKICBleHByOiBhID4gYgppdGVtczoKLSBpZDogMQogIHR5cGU6IG51bQogIHNvbHV0aW9uOiBzb2wKICBkaWdpdHM6IDAKICB0b2xlcmFuY2U6IDAuMAogIGNob2ljZXM6IFtdCg== -->
+```{r data, include=FALSE}
+exams::initialize_exercise()
+.fmt <- function(x, digits = 2) exams::fmt(x, digits = digits, decimal.mark = ",", big.mark = ".")
+.locale <- "EU"
+.ok <- FALSE
+for (.try in seq_len(10000L)) {
+  a <- sample(seq(4, 12, by = 1), 1)
+  b <- sample(seq(2, 9, by = 1), 1)
+  sol <- a + b
+  if (isTRUE(a > b)) { .ok <- TRUE; break }
+}
+if (!.ok) stop("Keine gueltige Variablenkombination gefunden.")
+
+```
+
+Question
+========
+Berechnen Sie $`r .fmt(a, 0)` + `r .fmt(b, 0)`$.
+
+`r exams::add_cloze(sol, tolerance = 0, digits = 0)`
+
+Answerlist
+----------
+`r exams::format_metainfo("answerlist")`
+
+Solution
+========
+Addieren Sie die beiden Zahlen: $`r .fmt(a, 0)` + `r .fmt(b, 0)` = `r .fmt(sol, 0)`$.
+
+Meta-information
+================
+exname: summe
+extype: `r exams::format_metainfo("type")`
+exsolution: `r exams::format_metainfo("solution")`
+extol: `r exams::format_metainfo("tolerance")`
+expoints: 1
+
