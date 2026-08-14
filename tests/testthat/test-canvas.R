@@ -60,11 +60,31 @@ test_that("math chips keep quoted text in data-text, not in onclick", {
   expect_match(html, "data-delete=\"1\"", fixed = TRUE)
 })
 
-test_that("text chips are deletable without being the editable node", {
+test_that("text chips stay editable and do not carry a standing delete control", {
   html <- canvas_token_html(list(list(kind = "text", text = "Hallo")))
   expect_match(html, "tok-edit", fixed = TRUE)
-  expect_match(html, "data-delete=\"1\"", fixed = TRUE)
+  expect_false(grepl("data-delete=", html, fixed = TRUE))
+  expect_false(grepl("tok-x", html, fixed = TRUE))
   expect_match(html, "contenteditable=\"true\"", fixed = TRUE)
+})
+
+test_that("newlines in text tokens become line breaks in the canvas", {
+  html <- canvas_token_html(list(
+    list(kind = "text", text = "\nBerechnen Sie "),
+    list(kind = "var", name = "a")
+  ))
+  expect_match(html, "<br/>Berechnen Sie ", fixed = TRUE)
+  expect_match(html, "data-delete=\"2\"", fixed = TRUE)
+})
+
+test_that("empty text tokens can be dropped from the question", {
+  ex <- new_exercise(question = "Hallo {a}")
+  toks <- tokenize_question(ex$question)
+  expect_equal(toks[[1]]$kind, "text")
+  ex$question <- tokens_to_question(list(list(kind = "text", text = "  "), list(kind = "var", name = "a")))
+  ex2 <- drop_empty_text_token(ex, 1L)
+  expect_equal(ex2$question, "{a}")
+  expect_equal(drop_empty_text_token(ex, 2L)$question, ex$question)
 })
 
 test_that("default example exposes variable chips on the canvas", {

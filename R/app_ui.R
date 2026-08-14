@@ -95,7 +95,7 @@ app_ui <- function() {
         ),
         shiny::div(
           class = "ws-main",
-          shiny::div(class = "ws-kicker", "Aufgabe — ziehen oder klicken fügt ein · Chip klicken wählt · × oder Entf löscht"),
+          shiny::div(class = "ws-kicker", "Aufgabe — ziehen oder klicken fügt ein · Chip wählen, × (Hover) oder Entf löscht"),
           shiny::uiOutput("canvas_ui")
         ),
         shiny::div(

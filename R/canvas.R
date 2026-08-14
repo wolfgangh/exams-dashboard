@@ -177,6 +177,26 @@ remove_variable_from_question <- function(ex, name) {
   ex
 }
 
+text_token_inner_html <- function(text) {
+  html <- html_escape(text %||% "")
+  gsub("\r\n|\r|\n", "<br/>", html, perl = TRUE)
+}
+
+drop_empty_text_token <- function(ex, index) {
+  toks <- tokenize_question(ex$question %||% "")
+  index <- scalar_int(index)
+  if (is.na(index) || index < 1L || index > length(toks)) return(ex)
+  if (!identical(toks[[index]]$kind, "text")) return(ex)
+  if (nzchar(trimws(toks[[index]]$text %||% ""))) return(ex)
+  if (length(toks) <= 1L) {
+    ex$question <- ""
+    return(ex)
+  }
+  toks <- toks[-index]
+  ex$question <- tokens_to_question(toks)
+  ex
+}
+
 canvas_token_html <- function(tokens, selection = list(kind = "none")) {
   if (!length(tokens)) {
     return(paste0(
@@ -190,7 +210,7 @@ canvas_token_html <- function(tokens, selection = list(kind = "none")) {
     sel <- token_is_selected(tok, i, selection)
     cls <- paste("tok", paste0("tok-", tok$kind), if (sel) "is-selected" else "")
     xbtn <- sprintf(
-      "<button type=\"button\" class=\"tok-x\" data-delete=\"%s\" aria-label=\"Entfernen\">×</button>",
+      "<button type=\"button\" class=\"tok-x\" data-delete=\"%s\" aria-label=\"Entfernen\" title=\"Entfernen\" tabindex=\"-1\">×</button>",
       i
     )
     switch(tok$kind,
@@ -207,8 +227,8 @@ canvas_token_html <- function(tokens, selection = list(kind = "none")) {
         cls, html_attr(tok$text %||% ""), i, html_escape(tok$text %||% ""), xbtn
       ),
       sprintf(
-        "<span class=\"%s\" data-kind=\"text\" data-i=\"%s\"><span class=\"tok-edit\" contenteditable=\"true\">%s</span>%s</span>",
-        cls, i, html_escape(tok$text %||% ""), xbtn
+        "<span class=\"%s\" data-kind=\"text\" data-i=\"%s\"><span class=\"tok-edit\" contenteditable=\"true\">%s</span></span>",
+        cls, i, text_token_inner_html(tok$text %||% "")
       )
     )
   }, character(1))

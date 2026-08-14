@@ -42,35 +42,18 @@
     if (el) el.classList.toggle("drag-over", !!on);
   }
 
-  var skipTextSave = false;
-  var lastDelete = { index: null, at: 0 };
-
-  function deleteFromControl(el) {
-    var index = el.getAttribute("data-delete");
-    var now = Date.now();
-    if (lastDelete.index === index && now - lastDelete.at < 400) return;
-    lastDelete = { index: index, at: now };
-    skipTextSave = true;
-    studioDelete(index);
-    setTimeout(function () {
-      skipTextSave = false;
-    }, 50);
+  function editPlainText(el) {
+    if (!el) return "";
+    var raw = typeof el.innerText === "string" ? el.innerText : el.textContent || "";
+    return raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   }
-
-  document.addEventListener("pointerdown", function (e) {
-    var del = e.target.closest ? e.target.closest("[data-delete]") : null;
-    if (!del) return;
-    e.preventDefault();
-    e.stopPropagation();
-    deleteFromControl(del);
-  });
 
   document.addEventListener("click", function (e) {
     var del = e.target.closest ? e.target.closest("[data-delete]") : null;
     if (del) {
       e.preventDefault();
       e.stopPropagation();
-      deleteFromControl(del);
+      studioDelete(del.getAttribute("data-delete"));
       return;
     }
 
@@ -141,7 +124,6 @@
   });
 
   document.addEventListener("focusout", function (e) {
-    if (skipTextSave) return;
     var next = e.relatedTarget;
     if (next && next.closest && next.closest("[data-delete]")) return;
     var edit = e.target.closest ? e.target.closest("#ws-canvas .tok-edit") : null;
@@ -150,11 +132,16 @@
     if (!tok) return;
     send("ws_text", {
       index: parseInt(tok.getAttribute("data-i"), 10),
-      text: edit.textContent || ""
+      text: editPlainText(edit)
     });
   });
 
   document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey && e.target && e.target.closest && e.target.closest("#ws-canvas .tok-edit")) {
+      e.preventDefault();
+      if (document.execCommand) document.execCommand("insertLineBreak");
+      return;
+    }
     if (e.key !== "Delete" && e.key !== "Backspace") return;
     if (e.target && (e.target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
     var tok = document.querySelector("#ws-canvas .tok.is-selected");

@@ -99,12 +99,16 @@ app_server <- function(input, output, session) {
     ev <- input$ws_text
     idx <- scalar_int(ev$index)
     toks <- tokenize_question(rv$ex$question)
-    if (!is.na(idx) && idx >= 1L && idx <= length(toks) && identical(toks[[idx]]$kind, "text")) {
-      toks[[idx]]$text <- ev$text %||% ""
-      ex <- rv$ex
-      ex$question <- tokens_to_question(toks)
-      rv$ex <- ex
+    if (is.na(idx) || idx < 1L || idx > length(toks) || !identical(toks[[idx]]$kind, "text")) return()
+    txt <- ev$text %||% ""
+    if (!nzchar(trimws(txt))) {
+      set_ex(drop_empty_text_token(rv$ex, idx), list(kind = "none"))
+      return()
     }
+    toks[[idx]]$text <- txt
+    ex <- rv$ex
+    ex$question <- tokens_to_question(toks)
+    rv$ex <- ex
   })
 
   shiny::observeEvent(input$ws_delete, {
@@ -182,8 +186,10 @@ app_server <- function(input, output, session) {
     rv$show_grid <- !isTRUE(rv$show_grid)
   })
 
+  ex_now <- shiny::reactive(rv$ex)
+  ex_for_grid <- shiny::debounce(ex_now, 400)
   shiny::observe({
-    ex <- rv$ex
+    ex <- ex_for_grid()
     rv$grid <- tryCatch(check_combinations(ex, max_rows = 800L), error = function(e) NULL)
   })
 
