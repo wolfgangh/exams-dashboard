@@ -33,6 +33,32 @@ insert_token_at <- function(tokens, index, token) {
   c(tokens[seq_len(index - 1L)], list(token), tokens[index:n])
 }
 
+split_insert_token <- function(tokens, index, offset, token) {
+  n <- length(tokens)
+  index <- scalar_int(index)
+  offset <- scalar_int(offset)
+  if (!n) return(list(tokens = list(token), at = 1L))
+  can_split <- !is.na(index) && !is.na(offset) &&
+    index >= 1L && index <= n && identical(tokens[[index]]$kind, "text")
+  if (!can_split) {
+    toks <- insert_token_at(tokens, if (is.na(index)) n + 1L else index, token)
+    at <- min(max(if (is.na(index)) length(toks) else index, 1L), length(toks))
+    return(list(tokens = toks, at = at))
+  }
+  txt <- tokens[[index]]$text %||% ""
+  off <- max(0L, min(nchar(txt), offset))
+  left <- if (off <= 0L) "" else substr(txt, 1L, off)
+  right <- if (off >= nchar(txt)) "" else substring(txt, off + 1L)
+  mid <- list()
+  if (nzchar(left)) mid <- c(mid, list(list(kind = "text", text = left)))
+  mid <- c(mid, list(token))
+  at <- length(mid)
+  if (nzchar(right)) mid <- c(mid, list(list(kind = "text", text = right)))
+  before <- if (index > 1L) tokens[seq_len(index - 1L)] else list()
+  after <- if (index < n) tokens[(index + 1L):n] else list()
+  list(tokens = c(before, mid, after), at = length(before) + at)
+}
+
 reorder_tokens <- function(tokens, order_idx) {
   order_idx <- as.integer(order_idx)
   order_idx <- order_idx[order_idx >= 1L & order_idx <= length(tokens)]
@@ -56,32 +82,44 @@ client_tokens_to_internal <- function(raw) {
   })
 }
 
-apply_palette_drop <- function(ex, action, index = 1L, name = NULL) {
+apply_palette_drop <- function(ex, action, index = 1L, name = NULL, offset = NULL, host_text = NULL) {
   tokens <- tokenize_question(ex$question %||% "")
   selection <- list(kind = "none")
+  idx <- scalar_int(index)
+  if (!is.null(host_text) && is.character(host_text) && length(host_text) == 1L &&
+      !is.na(idx) && idx >= 1L && idx <= length(tokens) && identical(tokens[[idx]]$kind, "text")) {
+    tokens[[idx]]$text <- host_text
+  }
+  put <- function(token) {
+    split_insert_token(tokens, index, offset, token)
+  }
   if (identical(action, "place-var")) {
     nm <- name %||% next_var_name(ex)
     if (!any(vapply(ex$variables, function(v) identical(v$name, nm), logical(1)))) {
       ex <- add_variable(ex, nm, kind = "integer")
     }
-    tokens <- insert_token_at(tokens, index, list(kind = "var", name = nm))
+    ins <- put(list(kind = "var", name = nm))
+    tokens <- ins$tokens
     selection <- list(kind = "var", name = nm)
   } else if (identical(action, "new-var-int")) {
     nm <- next_var_name(ex)
     ex <- add_variable(ex, nm, kind = "integer")
-    tokens <- insert_token_at(tokens, index, list(kind = "var", name = nm))
+    ins <- put(list(kind = "var", name = nm))
+    tokens <- ins$tokens
     selection <- list(kind = "var", name = nm)
   } else if (identical(action, "new-var-num")) {
     nm <- next_var_name(ex)
     ex <- add_variable(ex, nm, kind = "numeric", digits = 2L)
-    tokens <- insert_token_at(tokens, index, list(kind = "var", name = nm))
+    ins <- put(list(kind = "var", name = nm))
+    tokens <- ins$tokens
     selection <- list(kind = "var", name = nm)
   } else if (identical(action, "new-var-derived")) {
     nm <- next_var_name(ex)
     left <- if (length(ex$variables)) ex$variables[[1]]$name else "a"
     right <- if (length(ex$variables) >= 2L) ex$variables[[2]]$name else left
     ex <- add_variable(ex, nm, kind = "derived", expr = paste(left, "+", right))
-    tokens <- insert_token_at(tokens, index, list(kind = "var", name = nm))
+    ins <- put(list(kind = "var", name = nm))
+    tokens <- ins$tokens
     selection <- list(kind = "var", name = nm)
   } else if (action %in% c("gap-num", "gap-schoice", "gap-mchoice")) {
     typ <- sub("^gap-", "", action)
@@ -94,14 +132,14 @@ apply_palette_drop <- function(ex, action, index = 1L, name = NULL) {
     if (typ %in% c("schoice", "mchoice") && !length(it$choices)) {
       ex$items[[length(ex$items)]]$choices <- list(blank_choice(TRUE), blank_choice(), blank_choice())
     }
-    tokens <- insert_token_at(tokens, index, list(kind = "gap", id = it$id))
+    ins <- put(list(kind = "gap", id = it$id))
+    tokens <- ins$tokens
     if (length(ex$items) > 1L) ex$meta$type <- "cloze"
     selection <- list(kind = "gap", id = as.integer(it$id))
   } else if (identical(action, "math")) {
-    tokens <- insert_token_at(tokens, index, list(kind = "math", text = "a + b"))
-    inserted <- scalar_int(index)
-    if (is.na(inserted)) inserted <- length(tokens) else inserted <- min(max(inserted, 1L), length(tokens))
-    selection <- list(kind = "math", index = inserted, text = "a + b")
+    ins <- put(list(kind = "math", text = "a + b"))
+    tokens <- ins$tokens
+    selection <- list(kind = "math", index = ins$at, text = "a + b")
   } else if (identical(action, "rule")) {
     if (!length(ex$variables)) {
       ex <- add_variable(ex, "a", kind = "integer")
@@ -112,10 +150,9 @@ apply_palette_drop <- function(ex, action, index = 1L, name = NULL) {
     selection <- list(kind = "rule", id = ex$rules[[length(ex$rules)]]$id)
     return(list(ex = ex, selection = selection))
   } else if (identical(action, "text")) {
-    tokens <- insert_token_at(tokens, index, list(kind = "text", text = " "))
-    inserted <- scalar_int(index)
-    if (is.na(inserted)) inserted <- length(tokens) else inserted <- min(max(inserted, 1L), length(tokens))
-    selection <- list(kind = "text", index = inserted)
+    ins <- put(list(kind = "text", text = " "))
+    tokens <- ins$tokens
+    selection <- list(kind = "text", index = ins$at)
   }
   ex$question <- tokens_to_question(tokens)
   list(ex = ex, selection = selection)

@@ -115,6 +115,21 @@ test_that("dnd.js uses native drag and data-action, not Sortable", {
   expect_false(grepl("Sortable", js, fixed = TRUE))
 })
 
+test_that("split_insert_token places a chip inside text", {
+  toks <- list(list(kind = "text", text = "a = mehr"))
+  ins <- split_insert_token(toks, 1L, 4L, list(kind = "var", name = "a"))
+  expect_equal(tokens_to_question(ins$tokens), "a = {a}mehr")
+  expect_equal(ins$at, 2L)
+  expect_equal(ins$tokens[[1]]$text, "a = ")
+  expect_equal(ins$tokens[[3]]$text, "mehr")
+})
+
+test_that("apply_palette_drop can split host text at the caret", {
+  ex <- new_exercise(question = "Summe: ")
+  res <- apply_palette_drop(ex, "new-var-int", index = 1L, offset = 4L, host_text = "a = rest")
+  expect_equal(res$ex$question, "a = {a}rest")
+})
+
 test_that("insert and reorder keep all tokens", {
   toks <- list(
     list(kind = "text", text = "A"),

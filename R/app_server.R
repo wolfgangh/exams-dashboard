@@ -69,7 +69,14 @@ app_server <- function(input, output, session) {
 
   shiny::observeEvent(input$ws_drop, {
     ev <- input$ws_drop
-    res <- apply_palette_drop(rv$ex, ev$action %||% "", index = ev$index %||% 1L, name = nzchar_or_null(ev$name))
+    res <- apply_palette_drop(
+      rv$ex,
+      ev$action %||% "",
+      index = ev$index %||% 1L,
+      name = nzchar_or_null(ev$name),
+      offset = ev$offset,
+      host_text = if (is.null(ev$host_text)) NULL else as.character(ev$host_text)
+    )
     set_ex(res$ex, res$selection)
   })
 

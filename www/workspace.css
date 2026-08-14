@@ -57,6 +57,10 @@ html, body { height: 100%; overflow: hidden; }
 }
 .ws-canvas.is-empty { color: #85929e; display: flex; align-items: center; justify-content: center; }
 .ws-canvas.drag-over { border-color: #1b4f72; background: #f4f8fb; }
+.ws-drop-caret {
+  position: fixed; width: 2px; background: #1b4f72;
+  pointer-events: none; z-index: 40; border-radius: 1px;
+}
 .tok {
   display: inline-flex; align-items: baseline; gap: 0.1rem;
   margin: 0.08rem 0.18rem 0.08rem 0.08rem; vertical-align: baseline;
