@@ -121,26 +121,33 @@ app_server <- function(input, output, session) {
   })
 
   output$palette_ui <- shiny::renderUI({
+    pal_btn <- function(action, label, extra_class = "", name = "") {
+      shiny::tags$button(
+        type = "button",
+        class = paste("pal-item", extra_class),
+        onclick = sprintf(
+          "studioDrop(%s,%s)",
+          jsonlite::toJSON(action, auto_unbox = TRUE),
+          jsonlite::toJSON(name, auto_unbox = TRUE)
+        ),
+        label
+      )
+    }
     ex <- rv$ex
     var_chips <- lapply(ex$variables, function(v) {
-      shiny::div(
-        class = "pal-item pal-var",
-        `data-action` = "place-var",
-        `data-name` = v$name,
-        paste0("⟨", v$name, "⟩")
-      )
+      pal_btn("place-var", paste0("⟨", v$name, "⟩"), extra_class = "pal-var", name = v$name)
     })
     shiny::div(
       id = "ws-palette",
-      shiny::div(class = "pal-item", `data-action` = "new-var-int", "Neue Zahl"),
-      shiny::div(class = "pal-item", `data-action` = "new-var-num", "Neue Dezimalzahl"),
-      shiny::div(class = "pal-item", `data-action` = "new-var-derived", "Neue Formel (Summe)"),
-      shiny::div(class = "pal-item", `data-action` = "gap-num", "Lücke: Zahl"),
-      shiny::div(class = "pal-item", `data-action` = "gap-schoice", "Lücke: Einfachauswahl"),
-      shiny::div(class = "pal-item", `data-action` = "gap-mchoice", "Lücke: Mehrfachauswahl"),
-      shiny::div(class = "pal-item", `data-action` = "math", "Formel $ … $"),
-      shiny::div(class = "pal-item", `data-action` = "rule", "Bedingung"),
-      if (length(var_chips)) shiny::div(class = "ws-kicker", "Werte"),
+      pal_btn("new-var-int", "Neue Zahl"),
+      pal_btn("new-var-num", "Neue Dezimalzahl"),
+      pal_btn("new-var-derived", "Neue Formel (Summe)"),
+      pal_btn("gap-num", "Lücke: Zahl"),
+      pal_btn("gap-schoice", "Lücke: Einfachauswahl"),
+      pal_btn("gap-mchoice", "Lücke: Mehrfachauswahl"),
+      pal_btn("math", "Formel"),
+      pal_btn("rule", "Bedingung"),
+      if (length(var_chips)) shiny::div(class = "ws-kicker", "Werte — klicken fügt ein"),
       var_chips
     )
   })
@@ -319,8 +326,16 @@ inspector_gap <- function(ex, id) {
       selected = it$type
     ),
     shiny::div(
-      id = "ws-assign", class = "drop-sol",
-      if (nzchar(it$solution %||% "")) paste("Lösung:", it$solution) else "Wert hierher ziehen = Lösung"
+      class = "drop-sol",
+      shiny::p(if (nzchar(it$solution %||% "")) paste("Lösung:", it$solution) else "Lösung wählen:"),
+      lapply(ex$variables, function(v) {
+        shiny::tags$button(
+          type = "button",
+          class = "pal-item pal-var",
+          onclick = sprintf("studioAssign(%s)", jsonlite::toJSON(v$name, auto_unbox = TRUE)),
+          paste0("⟨", v$name, "⟩")
+        )
+      })
     ),
     shiny::conditionalPanel(
       "input.insp_gap_type == 'num'",

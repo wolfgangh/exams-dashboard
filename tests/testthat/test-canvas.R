@@ -43,6 +43,8 @@ test_that("canvas chips do not use native HTML5 draggable", {
   expect_false(grepl("draggable=\"true\"", html, fixed = TRUE))
   expect_match(html, "ws-canvas")
   expect_match(html, "tok-x")
+  expect_match(html, "studioDelete", fixed = TRUE)
+  expect_match(html, "studioSelect", fixed = TRUE)
 })
 
 test_that("insert and reorder keep all tokens", {

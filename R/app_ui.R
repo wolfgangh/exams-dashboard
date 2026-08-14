@@ -82,12 +82,12 @@ app_ui <- function() {
         class = "ws-body",
         shiny::div(
           class = "ws-palette",
-          shiny::div(class = "ws-kicker", "Ziehen"),
+          shiny::div(class = "ws-kicker", "Einfügen (Klick)"),
           shiny::uiOutput("palette_ui")
         ),
         shiny::div(
           class = "ws-main",
-          shiny::div(class = "ws-kicker", "Aufgabe — ziehen oder links anklicken · × oder Entf löscht Chips"),
+          shiny::div(class = "ws-kicker", "Aufgabe — links klicken fügt ein · Chip klicken wählt · × oder Entf löscht"),
           shiny::uiOutput("canvas_ui")
         ),
         shiny::div(
@@ -96,7 +96,6 @@ app_ui <- function() {
           shiny::uiOutput("health_ui")
         )
       ),
-      shiny::tags$script(src = "sortable.min.js"),
       shiny::tags$script(src = "dnd.js")
     )
   )

@@ -41,7 +41,7 @@ html, body { height: 100%; overflow: hidden; }
   display: block; width: 100%; text-align: left;
   border: 1px solid #d5d8dc; background: #fff; border-radius: 8px;
   padding: 0.4rem 0.55rem; margin-bottom: 0.35rem;
-  cursor: grab; font-size: 0.9rem;
+  cursor: pointer; font-size: 0.9rem;
 }
 .pal-item:hover { border-color: #1b4f72; background: #eaf2f8; }
 .pal-var { background: #d4e6f1; border-color: #a9cce3; font-weight: 650; }

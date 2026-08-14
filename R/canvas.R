@@ -183,16 +183,37 @@ canvas_token_html <- function(tokens, selection = list(kind = "none")) {
     cls <- paste("tok", paste0("tok-", tok$kind), if (sel) "is-selected" else "")
     switch(tok$kind,
       var = sprintf(
-        "<span class=\"%s\" data-kind=\"var\" data-action=\"place-var\" data-name=\"%s\" data-i=\"%s\" title=\"Variable %s\">⟨%s⟩<button type=\"button\" class=\"tok-x\" data-i=\"%s\" aria-label=\"Entfernen\">×</button></span>",
-        cls, html_escape(tok$name), i, html_escape(tok$name), html_escape(tok$name), i
+        paste0(
+          "<span class=\"%s\" data-kind=\"var\" data-name=\"%s\" data-i=\"%s\" title=\"Variable %s\" ",
+          "onclick=\"if(!event.target.closest('.tok-x')) studioSelect('var',{name:'%s',index:%s})\">",
+          "⟨%s⟩",
+          "<button type=\"button\" class=\"tok-x\" aria-label=\"Entfernen\" onclick=\"event.stopPropagation();studioDelete(%s)\">×</button>",
+          "</span>"
+        ),
+        cls, html_escape(tok$name), i, html_escape(tok$name),
+        html_escape(tok$name), i, html_escape(tok$name), i
       ),
       gap = sprintf(
-        "<span class=\"%s\" data-kind=\"gap\" data-id=\"%s\" data-i=\"%s\">Lücke %s<button type=\"button\" class=\"tok-x\" data-i=\"%s\" aria-label=\"Entfernen\">×</button></span>",
-        cls, as.integer(tok$id), i, as.integer(tok$id), i
+        paste0(
+          "<span class=\"%s\" data-kind=\"gap\" data-id=\"%s\" data-i=\"%s\" ",
+          "onclick=\"if(!event.target.closest('.tok-x')) studioSelect('gap',{id:%s,index:%s})\">",
+          "Lücke %s",
+          "<button type=\"button\" class=\"tok-x\" aria-label=\"Entfernen\" onclick=\"event.stopPropagation();studioDelete(%s)\">×</button>",
+          "</span>"
+        ),
+        cls, as.integer(tok$id), i, as.integer(tok$id), i, as.integer(tok$id), i
       ),
       math = sprintf(
-        "<span class=\"%s\" data-kind=\"math\" data-text=\"%s\" data-i=\"%s\">$%s$<button type=\"button\" class=\"tok-x\" data-i=\"%s\" aria-label=\"Entfernen\">×</button></span>",
-        cls, html_escape(tok$text %||% ""), i, html_escape(tok$text %||% ""), i
+        paste0(
+          "<span class=\"%s\" data-kind=\"math\" data-text=\"%s\" data-i=\"%s\" ",
+          "onclick=\"if(!event.target.closest('.tok-x')) studioSelect('math',{index:%s,text:%s})\">",
+          "$%s$",
+          "<button type=\"button\" class=\"tok-x\" aria-label=\"Entfernen\" onclick=\"event.stopPropagation();studioDelete(%s)\">×</button>",
+          "</span>"
+        ),
+        cls, html_escape(tok$text %||% ""), i, i,
+        jsonlite::toJSON(tok$text %||% "", auto_unbox = TRUE),
+        html_escape(tok$text %||% ""), i
       ),
       sprintf(
         "<span class=\"%s\" contenteditable=\"true\" data-kind=\"text\" data-i=\"%s\">%s</span>",
