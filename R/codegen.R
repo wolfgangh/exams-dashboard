@@ -166,7 +166,7 @@ render_inline_rmd <- function(text, ex) {
 }
 
 render_question_rmd <- function(ex) {
-  body <- render_inline_rmd(ex$question, ex)
+  body <- render_inline_rmd(normalize_gap_markers(ex$question), ex)
   used <- gregexpr("\\[\\[\\s*([0-9]+)\\s*\\]\\]", body, perl = TRUE)
   matches <- regmatches(body, used)[[1]]
   ids_in_text <- integer()
@@ -207,7 +207,7 @@ add_cloze_inline <- function(it) {
   }
   extra_txt <- if (length(extra)) paste0(", ", paste(extra, collapse = ", ")) else ""
   switch(it$type,
-    num = sprintf("`r exams::add_cloze(%s%s)`", trimws(it$solution), extra_txt),
+    num = sprintf("`r exams::add_cloze(%s%s)`", item_solution_code(it), extra_txt),
     schoice = sprintf("`r exams::add_cloze(.sol_%s, .lab_%s, type = \"schoice\")`", it$id, it$id),
     mchoice = sprintf("`r exams::add_cloze(.ok_%s, type = \"mchoice\")`", it$id),
     sprintf("`r exams::add_cloze(%s)`", trimws(it$solution %||% "NA"))

@@ -65,13 +65,14 @@ template_exercise <- function(which = c("num", "schoice", "mchoice", "cloze")) {
     ex$solution <- "Addieren Sie die beiden Zahlen: ${a} + {b} = {sol}$."
     ex$items <- list(list(
       id = 1L, type = "num", solution = "sol", digits = 0L, tolerance = 0,
-      choices = list()
+      scale = 1, unit = "", choices = list()
     ))
   } else if (which == "schoice") {
     ex$question <- "Welches Ergebnis hat ${a} + {b}$?"
     ex$solution <- "Die Summe ist ${sol}$."
     ex$items <- list(list(
       id = 1L, type = "schoice", solution = "sol", digits = 0L, tolerance = NULL,
+      scale = 1, unit = "",
       choices = list(
         list(text = "sol", correct = TRUE, correct_expr = NULL, dynamic = TRUE),
         list(text = "sol + 1", correct = FALSE, correct_expr = NULL, dynamic = TRUE),
@@ -84,6 +85,7 @@ template_exercise <- function(which = c("num", "schoice", "mchoice", "cloze")) {
     ex$solution <- "Pruefen Sie jede Aussage anhand der gezogenen Werte."
     ex$items <- list(list(
       id = 1L, type = "mchoice", solution = "", digits = 0L, tolerance = NULL,
+      scale = 1, unit = "",
       choices = list(
         list(text = "a ist groesser als b", correct = TRUE, correct_expr = "a > b", dynamic = FALSE),
         list(text = "a + b ist gerade", correct = FALSE, correct_expr = "(a + b) %% 2 == 0", dynamic = FALSE),
@@ -107,10 +109,11 @@ template_exercise <- function(which = c("num", "schoice", "mchoice", "cloze")) {
     )
     ex$solution <- "Summe = {sol}, Differenz = {diff}."
     ex$items <- list(
-      list(id = 1L, type = "num", solution = "sol", digits = 0L, tolerance = 0, choices = list()),
-      list(id = 2L, type = "num", solution = "diff", digits = 0L, tolerance = 0, choices = list()),
+      list(id = 1L, type = "num", solution = "sol", digits = 0L, tolerance = 0, scale = 1, unit = "EUR", choices = list()),
+      list(id = 2L, type = "num", solution = "diff", digits = 0L, tolerance = 0, scale = 1, unit = "EUR", choices = list()),
       list(
         id = 3L, type = "schoice", solution = "", digits = 0L, tolerance = NULL,
+        scale = 1, unit = "",
         choices = list(
           list(text = "gerade", correct = FALSE, correct_expr = "(a + b) %% 2 == 0", dynamic = FALSE),
           list(text = "ungerade", correct = FALSE, correct_expr = "(a + b) %% 2 == 1", dynamic = FALSE)
@@ -150,7 +153,8 @@ add_item <- function(ex, type = c("num", "schoice", "mchoice"),
   next_id <- if (length(ids)) max(ids) + 1L else 1L
   item <- list(
     id = next_id, type = type, solution = solution,
-    digits = as.integer(digits), tolerance = tolerance, choices = choices
+    digits = as.integer(digits), tolerance = tolerance,
+    scale = 1, unit = "", choices = choices
   )
   ex$items <- c(ex$items, list(item))
   if (length(ex$items) > 1L) ex$meta$type <- "cloze"
@@ -238,9 +242,9 @@ validate_exercise <- function(ex) {
     }
   }
   if (identical(ex$meta$type, "cloze")) {
-    gaps <- gregexpr("\\[\\[\\s*[0-9]+\\s*\\]\\]", ex$question, perl = TRUE)[[1]]
-    if (identical(gaps, -1L) && length(ex$items) > 1L) {
-      errs <- c(errs, "Im CLOZE-Text fehlen Lueckenmarken der Form [[1]], [[2]], ...")
+    ids <- gap_ids_in_text(ex$question)
+    if (!length(ids) && length(ex$items) > 1L) {
+      errs <- c(errs, "Fügen Sie die Lücken über die Schaltfläche „Lücke einfügen“ in den Fragetext ein.")
     }
   }
   errs

@@ -64,26 +64,63 @@ app_server <- function(input, output, session) {
     rv$rule_n <- length(ex$rules)
   })
 
-  shiny::observeEvent(input$add_item, {
+  shiny::observe({
     ex <- current_ex()
-    ex <- add_item(ex, type = "num", solution = "sol")
-    rv$ex <- ex
-    rv$item_n <- length(ex$items)
+    ch <- variable_choices(ex)
+    shiny::updateSelectInput(session, "insert_var_name", choices = ch)
   })
 
   shiny::observeEvent(input$insert_var, {
-    ex <- current_ex()
-    nm <- if (length(ex$variables)) ex$variables[[1]]$name else "a"
-    shiny::updateTextAreaInput(session, "question", value = paste0(input$question, " {", nm, "}"))
+    nm <- input$insert_var_name
+    if (!nzchar(nm %||% "")) {
+      shiny::showNotification("Legen Sie zuerst eine Variable an.", type = "warning")
+      return()
+    }
+    insert_into_question(session, input, var_token(nm))
+  })
+
+  shiny::observeEvent(input$insert_math, {
+    wrapped <- wrap_math(input$insert_math_text)
+    if (!nzchar(wrapped)) {
+      shiny::showNotification("Bitte eine Formel eingeben, z. B. A_0 oder a + b.", type = "warning")
+      return()
+    }
+    insert_into_question(session, input, wrapped)
   })
 
   shiny::observeEvent(input$insert_gap, {
     ex <- current_ex()
-    n <- length(ex$items)
-    shiny::updateTextAreaInput(session, "question", value = paste0(input$question, " [[", n, "]]"))
-    if (!identical(input$meta_type, "cloze")) {
+    typ <- input$insert_gap_type %||% "num"
+    used <- gap_ids_in_text(ex$question)
+    reuse <- NULL
+    if (length(ex$items) && !as.integer(ex$items[[1]]$id) %in% used) {
+      reuse <- ex$items[[1]]
+    }
+    if (is.null(reuse)) {
+      default_sol <- {
+        nms <- vapply(derived_variables(ex), function(v) v$name, character(1))
+        if (length(nms)) nms[[1]] else if (length(ex$variables)) ex$variables[[1]]$name else "sol"
+      }
+      ex <- add_item(ex, type = typ, solution = if (identical(typ, "num")) default_sol else "")
+      if (typ %in% c("schoice", "mchoice") && !length(ex$items[[length(ex$items)]]$choices)) {
+        ex$items[[length(ex$items)]]$choices <- list(blank_choice(TRUE), blank_choice(), blank_choice())
+      }
+      id <- ex$items[[length(ex$items)]]$id
+    } else {
+      reuse$type <- typ
+      if (typ %in% c("schoice", "mchoice") && !length(reuse$choices)) {
+        reuse$choices <- list(blank_choice(TRUE), blank_choice(), blank_choice())
+      }
+      ex$items[[1]] <- reuse
+      id <- reuse$id
+    }
+    if (!identical(ex$meta$type, "cloze") && (length(ex$items) > 1L || length(used) > 0L || !is.null(reuse))) {
+      ex$meta$type <- "cloze"
       shiny::updateRadioButtons(session, "meta_type", selected = "cloze")
     }
+    rv$ex <- ex
+    rv$item_n <- length(ex$items)
+    insert_into_question(session, input, paste0(" ", gap_token(id), " "))
   })
 
   shiny::observe({
@@ -217,10 +254,23 @@ app_server <- function(input, output, session) {
   output$items_ui <- shiny::renderUI({
     ex <- rv$ex
     n <- rv$item_n
+    vars <- variable_choices(ex)
     lapply(seq_len(max(n, 1L)), function(i) {
       it <- if (i <= length(ex$items)) ex$items[[i]] else blank_item(i, input$meta_type %||% "num")
-      item_editor_ui(i, it, show_delete = n > 1L)
+      item_editor_ui(i, it, var_choices = vars, show_delete = n > 1L)
     })
+  })
+
+  output$live_preview_ui <- shiny::renderUI({
+    ex <- tryCatch(current_ex(), error = function(e) rv$ex)
+    html <- live_preview_document(ex)
+    shiny::tags$iframe(
+      srcdoc = html,
+      class = "preview-frame live-frame",
+      width = "100%",
+      height = "440px",
+      sandbox = "allow-scripts"
+    )
   })
 
   output$axis_ui <- shiny::renderUI({
@@ -399,8 +449,8 @@ load_model <- function(ex, session, rv, input) {
   shiny::updateRadioButtons(session, "meta_type", selected = ex$meta$type)
   shiny::updateNumericInput(session, "meta_points", value = ex$meta$points)
   shiny::updateTextInput(session, "meta_section", value = ex$meta$section %||% "")
-  shiny::updateTextAreaInput(session, "question", value = ex$question)
-  shiny::updateTextAreaInput(session, "solution_text", value = ex$solution)
+  shiny::updateTextAreaInput(session, "question", value = to_author_text(ex$question))
+  shiny::updateTextAreaInput(session, "solution_text", value = to_author_text(ex$solution))
   shiny::updateSelectInput(session, "locale", selected = ex$meta$locale %||% "EU")
   rv$loading <- FALSE
 }
@@ -413,8 +463,8 @@ collect_exercise <- function(input, rv) {
   if (!is.null(input$meta_points)) ex$meta$points <- input$meta_points
   if (!is.null(input$meta_section)) ex$meta$section <- input$meta_section
   if (!is.null(input$locale)) ex$meta$locale <- input$locale
-  if (!is.null(input$question)) ex$question <- input$question
-  if (!is.null(input$solution_text)) ex$solution <- input$solution_text
+  if (!is.null(input$question)) ex$question <- from_author_text(input$question)
+  if (!is.null(input$solution_text)) ex$solution <- from_author_text(input$solution_text)
 
   n <- rv$var_n
   vars <- list()
@@ -475,20 +525,39 @@ collect_item <- function(input, i, typ) {
   if (typ %in% c("schoice", "mchoice")) {
     if (is.na(nch) || nch < 1L) nch <- 3L
     for (k in seq_len(nch)) {
+      src <- input[[paste0("ch_src_", i, "_", k)]] %||% "text"
+      varn <- input[[paste0("ch_var_", i, "_", k)]] %||% ""
+      raw <- input[[paste0("ch_text_", i, "_", k)]] %||% ""
+      if (identical(src, "var") && nzchar(varn)) {
+        text <- varn
+        dynamic <- TRUE
+      } else {
+        text <- raw
+        dynamic <- FALSE
+      }
       choices <- c(choices, list(list(
-        text = input[[paste0("ch_text_", i, "_", k)]] %||% "",
+        text = text,
         correct = isTRUE(input[[paste0("ch_ok_", i, "_", k)]]),
         correct_expr = nzchar_or_null(input[[paste0("ch_okexpr_", i, "_", k)]]),
-        dynamic = isTRUE(input[[paste0("ch_dyn_", i, "_", k)]])
+        dynamic = dynamic
       )))
     }
   }
+  src <- input[[paste0("item_solsrc_", i)]]
+  sol <- if (!is.null(src) && !identical(src, "__custom__") && nzchar(src)) {
+    src
+  } else {
+    input[[paste0("item_sol_", i)]] %||% ""
+  }
+  scale <- if (isTRUE(input[[paste0("item_percent_", i)]])) 100 else 1
   list(
     id = i,
     type = typ,
-    solution = input[[paste0("item_sol_", i)]] %||% "",
+    solution = sol,
     digits = as.integer(input[[paste0("item_digits_", i)]] %||% 2),
     tolerance = input[[paste0("item_tol_", i)]],
+    scale = scale,
+    unit = input[[paste0("item_unit_", i)]] %||% "",
     choices = choices
   )
 }
@@ -497,39 +566,87 @@ nzchar_or_null <- function(x) {
   if (is.null(x) || !nzchar(trimws(as.character(x)))) NULL else x
 }
 
-item_editor_ui <- function(i, it, show_delete = FALSE) {
-  nch <- max(length(it$choices), if (it$type %in% c("schoice", "mchoice")) 3L else 0L)
+insert_into_question <- function(session, input, text) {
+  session$sendCustomMessage("insertAtCursor", list(id = "question", text = text))
+}
+
+item_editor_ui <- function(i, it, var_choices = c(), show_delete = FALSE) {
+  nch <- length(it$choices)
+  sol_now <- it$solution %||% ""
+  sol_is_var <- nzchar(sol_now) && sol_now %in% unname(var_choices)
+  sol_choices <- c(var_choices, "Eigene Formel …" = "__custom__")
+  sol_selected <- if (sol_is_var) sol_now else "__custom__"
+
   choice_rows <- NULL
-  if (it$type %in% c("schoice", "mchoice") || nch > 0L) {
+  if (it$type %in% c("schoice", "mchoice")) {
     if (!length(it$choices)) {
       it$choices <- list(blank_choice(TRUE), blank_choice(), blank_choice())
-      nch <- 3L
     }
+    nch <- length(it$choices)
     choice_rows <- lapply(seq_len(nch), function(k) {
       ch <- it$choices[[k]]
-      shiny::fluidRow(
-        shiny::column(4, shiny::textInput(paste0("ch_text_", i, "_", k), if (k == 1L) "Alternative / Ausdruck" else NULL, value = ch$text)),
-        shiny::column(2, shiny::checkboxInput(paste0("ch_dyn_", i, "_", k), "Formel", value = isTRUE(ch$dynamic))),
-        shiny::column(2, shiny::checkboxInput(paste0("ch_ok_", i, "_", k), "richtig", value = isTRUE(ch$correct))),
-        shiny::column(4, shiny::textInput(paste0("ch_okexpr_", i, "_", k), if (k == 1L) "richtig wenn (optional)" else NULL, value = ch$correct_expr %||% ""))
+      is_var <- isTRUE(ch$dynamic) && nzchar(ch$text %||% "") && ch$text %in% unname(var_choices)
+      shiny::div(
+        class = "choice-row",
+        shiny::fluidRow(
+          shiny::column(3, shiny::selectInput(
+            paste0("ch_src_", i, "_", k), if (k == 1L) "Art" else NULL,
+            choices = c("Text" = "text", "Wert einer Variablen" = "var"),
+            selected = if (is_var) "var" else "text"
+          )),
+          shiny::column(4, shiny::conditionalPanel(
+            sprintf("input.ch_src_%s_%s == 'text'", i, k),
+            shiny::textInput(paste0("ch_text_", i, "_", k), if (k == 1L) "Antworttext" else NULL, value = if (is_var) "" else ch$text)
+          )),
+          shiny::column(4, shiny::conditionalPanel(
+            sprintf("input.ch_src_%s_%s == 'var'", i, k),
+            shiny::selectInput(
+              paste0("ch_var_", i, "_", k), if (k == 1L) "Variable" else NULL,
+              choices = var_choices,
+              selected = if (is_var) ch$text else NULL
+            )
+          )),
+          shiny::column(2, shiny::checkboxInput(
+            paste0("ch_ok_", i, "_", k),
+            if (identical(it$type, "schoice")) "richtig" else "zutreffend",
+            value = isTRUE(ch$correct)
+          ))
+        )
       )
     })
   }
+
   shiny::div(
     class = "item-well",
+    shiny::tags$h5(paste("Lücke", i)),
     shiny::fluidRow(
       shiny::column(4, shiny::selectInput(
-        paste0("item_type_", i), paste("Luecke", i, "— Typ"),
-        choices = c("Numerisch" = "num", "Einfachauswahl" = "schoice", "Mehrfachauswahl" = "mchoice"),
+        paste0("item_type_", i), "Eingabeart",
+        choices = c("Zahleneingabe" = "num", "Einfachauswahl" = "schoice", "Mehrfachauswahl" = "mchoice"),
         selected = it$type
       )),
-      shiny::column(4, shiny::textInput(paste0("item_sol_", i), "Loesungsformel", value = it$solution %||% "")),
-      shiny::column(2, shiny::numericInput(paste0("item_digits_", i), "Stellen", value = it$digits %||% 2, min = 0, max = 8)),
-      shiny::column(2, shiny::numericInput(paste0("item_tol_", i), "Toleranz", value = it$tolerance %||% NA, min = 0))
+      shiny::column(5, shiny::selectInput(
+        paste0("item_solsrc_", i), "Lösung",
+        choices = sol_choices,
+        selected = sol_selected
+      )),
+      shiny::column(3, shiny::conditionalPanel(
+        sprintf("input.item_solsrc_%s == '__custom__'", i),
+        shiny::textInput(paste0("item_sol_", i), "Formel", value = if (sol_is_var) "" else sol_now)
+      ))
+    ),
+    shiny::conditionalPanel(
+      sprintf("input.item_type_%s == 'num'", i),
+      shiny::fluidRow(
+        shiny::column(3, shiny::numericInput(paste0("item_digits_", i), "Nachkommastellen", value = it$digits %||% 2, min = 0, max = 8)),
+        shiny::column(3, shiny::textInput(paste0("item_unit_", i), "Einheit", value = it$unit %||% "", placeholder = "EUR, %, …")),
+        shiny::column(3, shiny::checkboxInput(paste0("item_percent_", i), "Als Prozent anzeigen (× 100)", value = isTRUE(as.numeric(it$scale %||% 1) == 100))),
+        shiny::column(3, shiny::numericInput(paste0("item_tol_", i), "Toleranz", value = it$tolerance %||% NA, min = 0))
+      )
     ),
     if (!is.null(choice_rows)) shiny::div(choice_rows),
     shiny::numericInput(paste0("item_nch_", i), NULL, value = nch, min = 0),
     shiny::tags$style(sprintf("#item_nch_%s { display:none; }", i)),
-    if (show_delete) shiny::actionButton(paste0("item_del_", i), "Luecke entfernen", class = "btn-sm btn-outline-danger")
+    if (show_delete) shiny::actionButton(paste0("item_del_", i), "Lücke entfernen", class = "btn-sm btn-outline-danger")
   )
 }

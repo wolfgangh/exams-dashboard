@@ -103,6 +103,8 @@ blank_item <- function(id = 1L, type = "num") {
     solution = if (type == "num") "sol" else "",
     digits = 2L,
     tolerance = NULL,
+    scale = 1,
+    unit = "",
     choices = if (type %in% c("schoice", "mchoice")) {
       list(blank_choice(TRUE), blank_choice(), blank_choice())
     } else {

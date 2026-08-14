@@ -20,6 +20,7 @@ app_ui <- function() {
     window_title = "R/exams Studio",
     fillable = TRUE,
     header = shiny::tags$head(
+      shiny::tags$script(src = "insert.js"),
       shiny::tags$style(shiny::HTML("
         .studio-card { margin-bottom: 1rem; }
         .status-ok { color: #1e8449; font-weight: 600; }
@@ -30,6 +31,10 @@ app_ui <- function() {
         .item-well { background: #f8f9fb; border: 1px solid #d5d8dc; border-radius: 8px; padding: 0.9rem; margin-bottom: 0.8rem; }
         iframe.preview-frame { border: 1px solid #d5d8dc; border-radius: 8px; background: white; }
         .navbar { box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+        .insert-bar { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: flex-end; margin-bottom: 0.6rem; }
+        .insert-bar .form-group { margin-bottom: 0; }
+        .live-frame { min-height: 280px; }
+        .choice-row { background: #fff; border: 1px solid #e5e8eb; border-radius: 6px; padding: 0.45rem 0.55rem; margin-bottom: 0.35rem; }
       "))
     ),
     bslib::nav_spacer(),
@@ -62,15 +67,15 @@ app_ui <- function() {
           shiny::hr(),
           shiny::p(
             class = "help-muted",
-            "Variablen im Text als {a} schreiben. CLOZE-Luecken als [[1]], [[2]].",
-            " Die App erzeugt daraus modernes R/exams mit add_cloze() und format_metainfo()."
+            "Text schreiben, Werte und Lücken über die Knöpfe einfügen.",
+            " Formeln ohne Dollarzeichen eingeben — die App setzt die Formelumgebung."
           )
         ),
         bslib::layout_columns(
-          col_widths = c(7, 5),
+          col_widths = c(6, 6),
           bslib::card(
             class = "studio-card",
-            bslib::card_header("Fragetext"),
+            bslib::card_header("1. Fragetext schreiben"),
             bslib::card_body(
               shiny::textInput("meta_name", "Interner Name", value = "summe"),
               shiny::textInput("meta_title", "Titel (sichtbar)", value = "Summe zweier Zahlen"),
@@ -80,7 +85,7 @@ app_ui <- function() {
                   "Numerisch" = "num",
                   "Einfachauswahl" = "schoice",
                   "Mehrfachauswahl" = "mchoice",
-                  "Lueckentext (CLOZE)" = "cloze"
+                  "Lückentext (CLOZE)" = "cloze"
                 ),
                 selected = "num",
                 inline = TRUE
@@ -89,33 +94,60 @@ app_ui <- function() {
                 shiny::column(6, shiny::numericInput("meta_points", "Punkte", value = 1, min = 0, step = 0.5)),
                 shiny::column(6, shiny::textInput("meta_section", "Abschnitt / Thema", value = ""))
               ),
-              shiny::textAreaInput(
-                "question", "Frage (Markdown, Formeln in $...$)",
-                rows = 8, width = "100%",
-                value = "Berechnen Sie ${a} + {b}$."
-              ),
               shiny::div(
-                shiny::actionButton("insert_var", "Variable einfuegen { }", class = "btn-sm btn-outline-secondary"),
-                shiny::actionButton("insert_gap", "Luecke einfuegen [[ ]]", class = "btn-sm btn-outline-secondary")
+                class = "insert-bar",
+                shiny::div(
+                  shiny::selectInput("insert_var_name", "Wert einfügen", choices = c("a" = "a"), width = "160px"),
+                  shiny::actionButton("insert_var", "Wert", class = "btn-sm btn-outline-primary", icon = shiny::icon("hashtag"))
+                ),
+                shiny::div(
+                  shiny::textInput("insert_math_text", "Formel (ohne $ … $)", value = "", placeholder = "z. B. A_0 oder a + b", width = "220px"),
+                  shiny::actionButton("insert_math", "Formel", class = "btn-sm btn-outline-primary", icon = shiny::icon("square-root-variable"))
+                ),
+                shiny::div(
+                  shiny::selectInput(
+                    "insert_gap_type", "Lücke einfügen",
+                    choices = c("Zahleneingabe" = "num", "Einfachauswahl" = "schoice", "Mehrfachauswahl" = "mchoice"),
+                    width = "180px"
+                  ),
+                  shiny::actionButton("insert_gap", "Lücke", class = "btn-sm btn-primary", icon = shiny::icon("i-cursor"))
+                )
               ),
-              shiny::br(),
               shiny::textAreaInput(
-                "solution_text", "Loesungsweg (fuer Studierende nach der Abgabe)",
-                rows = 5, width = "100%",
-                value = "Addieren Sie die beiden Zahlen: ${a} + {b} = {sol}$."
+                "question", NULL,
+                rows = 8, width = "100%",
+                value = "Berechnen Sie $⟨a⟩ + ⟨b⟩$."
+              ),
+              shiny::p(
+                class = "help-muted",
+                "Cursor in den Text setzen, dann Wert, Formel oder Lücke einfügen.",
+                " Die blauen Chips in der Vorschau sind gezogene Zahlen, die Kästen sind Eingaben."
+              ),
+              shiny::textAreaInput(
+                "solution_text", "Lösungsweg (nach der Abgabe sichtbar)",
+                rows = 4, width = "100%",
+                value = "Addieren Sie die beiden Zahlen: $⟨a⟩ + ⟨b⟩ = ⟨sol⟩$."
               )
             )
           ),
           bslib::card(
             class = "studio-card",
-            bslib::card_header("Antwortfelder"),
+            bslib::card_header("2. So sieht die Aufgabe aus"),
             bslib::card_body(
-              shiny::uiOutput("items_ui"),
-              shiny::conditionalPanel(
-                "input.meta_type == 'cloze'",
-                shiny::actionButton("add_item", "Weitere Luecke", icon = shiny::icon("plus"), class = "btn-outline-primary")
-              )
+              shiny::uiOutput("live_preview_ui")
             )
+          )
+        ),
+        bslib::card(
+          class = "studio-card",
+          bslib::card_header("3. Lücken zuordnen"),
+          bslib::card_body(
+            shiny::p(
+              class = "help-muted",
+              "Jeder Lücke eine Lösung zuweisen — per Variablenliste, nicht als R-Code.",
+              " Prozent: Studierende geben 12,35 ein, intern wird mit 0,1235 gerechnet."
+            ),
+            shiny::uiOutput("items_ui")
           )
         )
       )

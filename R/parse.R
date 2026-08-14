@@ -81,6 +81,8 @@ normalize_item <- function(it) {
     solution = it$solution %||% "",
     digits = as.integer(it$digits %||% 2L),
     tolerance = it$tolerance,
+    scale = as.numeric(it$scale %||% 1),
+    unit = it$unit %||% "",
     choices = choices
   )
 }
@@ -90,7 +92,7 @@ parse_rmd_best_effort <- function(text) {
   ex$partial <- TRUE
   q <- extract_section(text, "Question")
   s <- extract_section(text, "Solution")
-  if (!is.null(q)) ex$question <- trimws(q)
+  if (!is.null(q)) ex$question <- normalize_gap_markers(trimws(q))
   if (!is.null(s)) ex$solution <- trimws(s)
   meta <- extract_section(text, "Meta-information")
   if (!is.null(meta)) {
