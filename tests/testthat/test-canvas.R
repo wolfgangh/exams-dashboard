@@ -28,6 +28,23 @@ test_that("assign_gap_solution writes the variable onto the item", {
   expect_equal(item_by_id(ex, 1L)$solution, "diff")
 })
 
+test_that("remove_token_at drops a gap chip and its item", {
+  ex <- template_exercise("cloze")
+  toks <- tokenize_question(ex$question)
+  gap_i <- which(vapply(toks, function(t) identical(t$kind, "gap") && identical(as.integer(t$id), 1L), logical(1)))[1]
+  n_items <- length(ex$items)
+  ex2 <- remove_token_at(ex, gap_i)
+  expect_false(grepl("\\[\\[1\\]\\]", ex2$question))
+  expect_lt(length(ex2$items), n_items)
+})
+
+test_that("canvas chips do not use native HTML5 draggable", {
+  html <- canvas_token_html(tokenize_question(example_exercise()$question))
+  expect_false(grepl("draggable=\"true\"", html, fixed = TRUE))
+  expect_match(html, "ws-canvas")
+  expect_match(html, "tok-x")
+})
+
 test_that("insert and reorder keep all tokens", {
   toks <- list(
     list(kind = "text", text = "A"),

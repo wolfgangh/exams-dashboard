@@ -153,6 +153,26 @@ update_item_field <- function(ex, id, field, value) {
   ex
 }
 
+remove_token_at <- function(ex, index) {
+  toks <- tokenize_question(ex$question %||% "")
+  index <- as.integer(index)
+  if (is.na(index) || index < 1L || index > length(toks)) return(ex)
+  tok <- toks[[index]]
+  toks <- toks[-index]
+  ex$question <- tokens_to_question(toks)
+  if (identical(tok$kind, "gap") && length(ex$items) > 1L) {
+    id <- as.integer(tok$id)
+    keep <- vapply(ex$items, function(it) !identical(as.integer(it$id), id), logical(1))
+    if (any(keep)) ex$items <- ex$items[keep]
+  }
+  ex
+}
+
+remove_variable_from_question <- function(ex, name) {
+  ex$question <- gsub(paste0("\\{", name, "\\}"), "", ex$question %||% "", perl = TRUE)
+  ex
+}
+
 canvas_token_html <- function(tokens, selection = list(kind = "none")) {
   if (!length(tokens)) {
     return("<div id=\"ws-canvas\" class=\"ws-canvas is-empty\">Text schreiben oder etwas von links hierher ziehen.</div>")
@@ -163,16 +183,16 @@ canvas_token_html <- function(tokens, selection = list(kind = "none")) {
     cls <- paste("tok", paste0("tok-", tok$kind), if (sel) "is-selected" else "")
     switch(tok$kind,
       var = sprintf(
-        "<span class=\"%s\" draggable=\"true\" data-kind=\"var\" data-action=\"place-var\" data-name=\"%s\" data-i=\"%s\" title=\"Variable %s\">⟨%s⟩</span>",
-        cls, html_escape(tok$name), i, html_escape(tok$name), html_escape(tok$name)
+        "<span class=\"%s\" data-kind=\"var\" data-action=\"place-var\" data-name=\"%s\" data-i=\"%s\" title=\"Variable %s\">⟨%s⟩<button type=\"button\" class=\"tok-x\" data-i=\"%s\" aria-label=\"Entfernen\">×</button></span>",
+        cls, html_escape(tok$name), i, html_escape(tok$name), html_escape(tok$name), i
       ),
       gap = sprintf(
-        "<span class=\"%s\" draggable=\"true\" data-kind=\"gap\" data-id=\"%s\" data-i=\"%s\">Lücke %s</span>",
-        cls, as.integer(tok$id), i, as.integer(tok$id)
+        "<span class=\"%s\" data-kind=\"gap\" data-id=\"%s\" data-i=\"%s\">Lücke %s<button type=\"button\" class=\"tok-x\" data-i=\"%s\" aria-label=\"Entfernen\">×</button></span>",
+        cls, as.integer(tok$id), i, as.integer(tok$id), i
       ),
       math = sprintf(
-        "<span class=\"%s\" data-kind=\"math\" data-text=\"%s\" data-i=\"%s\">$%s$</span>",
-        cls, html_escape(tok$text %||% ""), i, html_escape(tok$text %||% "")
+        "<span class=\"%s\" data-kind=\"math\" data-text=\"%s\" data-i=\"%s\">$%s$<button type=\"button\" class=\"tok-x\" data-i=\"%s\" aria-label=\"Entfernen\">×</button></span>",
+        cls, html_escape(tok$text %||% ""), i, html_escape(tok$text %||% ""), i
       ),
       sprintf(
         "<span class=\"%s\" contenteditable=\"true\" data-kind=\"text\" data-i=\"%s\">%s</span>",

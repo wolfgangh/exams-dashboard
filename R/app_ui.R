@@ -18,36 +18,65 @@ app_ui <- function() {
     gap = 0,
     title = "R/exams Studio",
     shiny::tags$head(
-      shiny::tags$link(rel = "stylesheet", href = "workspace.css"),
-      shiny::tags$script(src = "dnd.js")
+      shiny::tags$link(rel = "stylesheet", href = "workspace.css")
     ),
     shiny::div(
       class = "ws-shell",
       shiny::div(
         class = "ws-top",
         shiny::span(class = "ws-brand", "R/exams Studio"),
-        shiny::textInput("meta_title", NULL, value = "Summe zweier Zahlen", width = "220px"),
-        shiny::numericInput("meta_points", NULL, value = 1, min = 0, step = 0.5, width = "80px"),
-        shiny::selectInput(
-          "locale", NULL,
-          choices = c("EU 1.234,56" = "EU", "US 1,234.56" = "US"),
-          selected = "EU", width = "140px"
+        shiny::div(
+          class = "ws-field",
+          shiny::textInput("meta_title", "Aufgabentitel", value = "Summe zweier Zahlen", width = "220px")
         ),
-        shiny::selectInput(
-          "template", NULL,
-          choices = c(
-            "Vorlage: Numerisch" = "num",
-            "Vorlage: Einfachauswahl" = "schoice",
-            "Vorlage: Mehrfachauswahl" = "mchoice",
-            "Vorlage: CLOZE" = "cloze"
-          ),
-          width = "190px"
+        shiny::div(
+          class = "ws-field",
+          title = "Punkte, die diese Aufgabe in Moodle/PDF zählt",
+          shiny::numericInput("meta_points", "Punkte", value = 1, min = 0, step = 0.5, width = "90px")
         ),
-        shiny::actionButton("apply_template", "Laden", class = "btn-sm btn-light"),
-        shiny::fileInput("load_rmd", NULL, accept = c(".Rmd", ".rmd", ".txt"), buttonLabel = "Rmd…", placeholder = ""),
-        shiny::downloadButton("dl_rmd", "Rmd", class = "btn-sm btn-light"),
-        shiny::downloadButton("dl_moodle", "Moodle", class = "btn-sm btn-warning"),
-        shiny::downloadButton("dl_pdf", "PDF", class = "btn-sm btn-light")
+        shiny::div(
+          class = "ws-field",
+          title = "Dezimal- und Tausendertrennzeichen in der Anzeige",
+          shiny::selectInput(
+            "locale", "Zahlenformat",
+            choices = c("EU (1.234,56)" = "EU", "US (1,234.56)" = "US"),
+            selected = "EU", width = "150px"
+          )
+        ),
+        shiny::div(
+          class = "ws-field",
+          title = "Fertige Beispielaufgabe in die Fläche laden",
+          shiny::selectInput(
+            "template", "Beispiel laden",
+            choices = c(
+              "Numerisch" = "num",
+              "Einfachauswahl" = "schoice",
+              "Mehrfachauswahl" = "mchoice",
+              "Lückentext (CLOZE)" = "cloze"
+            ),
+            width = "180px"
+          )
+        ),
+        shiny::div(
+          class = "ws-field ws-field-btn",
+          shiny::tags$span(class = "ws-field-label", "\u00a0"),
+          shiny::actionButton("apply_template", "Beispiel übernehmen", class = "btn-sm btn-light")
+        ),
+        shiny::div(
+          class = "ws-field",
+          title = "Vorhandene Studio-Rmd öffnen",
+          shiny::fileInput("load_rmd", "Datei öffnen", accept = c(".Rmd", ".rmd", ".txt"), buttonLabel = "Wählen…", placeholder = "keine")
+        ),
+        shiny::div(
+          class = "ws-field ws-field-btn",
+          shiny::tags$span(class = "ws-field-label", "Export"),
+          shiny::div(
+            class = "ws-export",
+            shiny::downloadButton("dl_rmd", "Rmd", class = "btn-sm btn-light", title = "Aufgabe als R/exams-Rmd speichern"),
+            shiny::downloadButton("dl_moodle", "Moodle", class = "btn-sm btn-warning", title = "Moodle-XML/ZIP erzeugen"),
+            shiny::downloadButton("dl_pdf", "PDF", class = "btn-sm btn-light", title = "PDF erzeugen (LaTeX nötig)")
+          )
+        )
       ),
       shiny::div(
         class = "ws-body",
@@ -58,7 +87,7 @@ app_ui <- function() {
         ),
         shiny::div(
           class = "ws-main",
-          shiny::div(class = "ws-kicker", "Aufgabe — ablegen und anklicken"),
+          shiny::div(class = "ws-kicker", "Aufgabe — ziehen oder links anklicken · × oder Entf löscht Chips"),
           shiny::uiOutput("canvas_ui")
         ),
         shiny::div(
@@ -66,7 +95,9 @@ app_ui <- function() {
           shiny::uiOutput("inspector_ui"),
           shiny::uiOutput("health_ui")
         )
-      )
+      ),
+      shiny::tags$script(src = "sortable.min.js"),
+      shiny::tags$script(src = "dnd.js")
     )
   )
 }

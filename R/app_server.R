@@ -107,6 +107,12 @@ app_server <- function(input, output, session) {
     }
   })
 
+  shiny::observeEvent(input$ws_delete, {
+    idx <- suppressWarnings(as.integer(input$ws_delete$index))
+    if (is.na(idx)) return()
+    set_ex(remove_token_at(rv$ex, idx), list(kind = "none"))
+  })
+
   shiny::observeEvent(input$ws_assign, {
     nm <- input$ws_assign$name
     sel <- rv$selection
@@ -141,6 +147,9 @@ app_server <- function(input, output, session) {
 
   output$canvas_ui <- shiny::renderUI({
     html <- canvas_token_html(tokenize_question(rv$ex$question), rv$selection)
+    session$onFlushed(function() {
+      session$sendCustomMessage("ws_ready", 1)
+    }, once = TRUE)
     shiny::HTML(html)
   })
 
@@ -420,7 +429,8 @@ bind_inspector_events <- function(input, session, rv) {
     if (!identical(rv$selection$kind, "var")) return()
     i <- find_variable(rv$ex, rv$selection$name)
     if (is.na(i)) return()
-    ex <- rv$ex
+    name <- rv$selection$name
+    ex <- remove_variable_from_question(rv$ex, name)
     ex$variables <- ex$variables[-i]
     rv$ex <- ex
     rv$selection <- list(kind = "none")

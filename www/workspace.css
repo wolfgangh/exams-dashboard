@@ -1,14 +1,23 @@
 html, body { height: 100%; overflow: hidden; }
 .ws-shell { display: flex; flex-direction: column; height: 100vh; background: #eef2f5; }
 .ws-top {
-  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-  padding: 0.45rem 0.75rem; background: #1b4f72; color: #fff;
-  min-height: 52px;
+  display: flex; align-items: flex-end; gap: 0.65rem; flex-wrap: wrap;
+  padding: 0.5rem 0.75rem 0.55rem; background: #1b4f72; color: #fff;
+  min-height: 72px;
 }
 .ws-top .form-control, .ws-top .form-select { min-height: 32px; font-size: 0.88rem; }
-.ws-top label { display: none; }
-.ws-brand { font-weight: 700; letter-spacing: .02em; margin-right: 0.4rem; white-space: nowrap; }
+.ws-top .form-group { margin-bottom: 0; }
+.ws-top label, .ws-field-label {
+  display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: #d4e6f1; margin-bottom: 0.15rem;
+}
+.ws-field { display: flex; flex-direction: column; }
+.ws-field-btn { justify-content: flex-end; }
+.ws-export { display: flex; gap: 0.3rem; }
+.ws-brand { font-weight: 700; letter-spacing: .02em; margin-right: 0.3rem; white-space: nowrap; align-self: center; }
 .ws-top .btn { font-size: 0.82rem; }
+.ws-top .shiny-input-container { margin-bottom: 0; }
+.ws-top .input-group { margin-bottom: 0; }
 .ws-body {
   flex: 1; min-height: 0;
   display: grid;
@@ -16,6 +25,7 @@ html, body { height: 100%; overflow: hidden; }
 }
 .ws-palette, .ws-side {
   overflow: auto;
+  overflow-x: hidden;
   background: #f7f9fb;
   padding: 0.75rem;
 }
@@ -46,9 +56,15 @@ html, body { height: 100%; overflow: hidden; }
 .ws-canvas.is-empty { color: #85929e; display: flex; align-items: center; justify-content: center; }
 .ws-canvas.drag-over { border-color: #1b4f72; background: #f4f8fb; }
 .tok {
-  display: inline-block; margin: 0.08rem 0.12rem; vertical-align: middle;
-  user-select: none;
+  display: inline-flex; align-items: center; gap: 0.15rem;
+  margin: 0.08rem 0.12rem; vertical-align: middle;
+  user-select: none; position: relative;
 }
+.tok-x {
+  border: 0; background: transparent; color: #922b21; font-size: 0.95rem;
+  line-height: 1; padding: 0 0.15rem; cursor: pointer; font-weight: 700;
+}
+.tok-x:hover { color: #fff; background: #922b21; border-radius: 999px; }
 .tok-text { user-select: text; cursor: text; padding: 0 0.1rem; border-bottom: 1px dotted transparent; }
 .tok-text:hover, .tok-text:focus { border-bottom-color: #1b4f72; outline: none; }
 .tok-var {
