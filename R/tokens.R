@@ -2,11 +2,13 @@
 
 normalize_gap_markers <- function(text) {
   if (!nzchar(text %||% "")) return("")
-  text <- gsub("##ANSWER([0-9]+)##", "[[\\1]]", text, perl = TRUE)
-  text <- gsub("#+#ANSWER([0-9]+)#+#", "[[\\1]]", text, perl = TRUE)
   text <- gsub("〔Lücke\\s*([0-9]+)〕", "[[\\1]]", text, perl = TRUE)
   text <- gsub("\\[Lücke\\s*([0-9]+)\\]", "[[\\1]]", text, perl = TRUE)
   text
+}
+
+has_legacy_answer_tags <- function(text) {
+  grepl("ANSWER[0-9]+", text %||% "", perl = TRUE)
 }
 
 from_author_text <- function(text) {

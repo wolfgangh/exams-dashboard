@@ -22,6 +22,8 @@ test_that("US locale switches fmt marks", {
 test_that("cloze codegen emits several add_cloze calls", {
   rmd <- exercise_to_rmd(template_exercise("cloze"))
   expect_gte(length(gregexpr("add_cloze", rmd)[[1]]), 3)
+  expect_false(grepl("ANSWER", rmd))
+  expect_match(rmd, "format_metainfo", fixed = TRUE)
 })
 
 test_that("roundtrip via embedded model is lossless for core fields", {

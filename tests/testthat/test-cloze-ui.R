@@ -1,11 +1,19 @@
 test_that("author tokens convert to internal placeholders", {
-  raw <- "Summe $⟨a⟩ + ⟨b⟩$ = 〔Lücke 1〕 und ##ANSWER2##"
+  raw <- "Summe $⟨a⟩ + ⟨b⟩$ = 〔Lücke 1〕 und 〔Lücke 2〕"
   inner <- from_author_text(raw)
   expect_equal(inner, "Summe ${a} + {b}$ = [[1]] und [[2]]")
   expect_equal(gap_ids_in_text(raw), c(1L, 2L))
   back <- to_author_text(inner)
   expect_match(back, "⟨a⟩", fixed = TRUE)
   expect_match(back, "〔Lücke 1〕", fixed = TRUE)
+})
+
+test_that("legacy ANSWER tags are rejected", {
+  expect_true(has_legacy_answer_tags("Wert ##ANSWER1## EUR"))
+  ex <- example_exercise()
+  ex$question <- "Ergebnis: ##ANSWER1##"
+  errs <- validate_exercise(ex)
+  expect_true(any(grepl("ANSWER", errs)))
 })
 
 test_that("wrap_math adds dollar signs once", {

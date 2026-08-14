@@ -241,6 +241,9 @@ validate_exercise <- function(ex) {
       }
     }
   }
+  if (has_legacy_answer_tags(ex$question) || has_legacy_answer_tags(ex$solution)) {
+    errs <- c(errs, "Die alte ##ANSWERn##-Syntax wird nicht mehr verwendet. Bitte Lücken über die Schaltfläche einfügen (add_cloze).")
+  }
   if (identical(ex$meta$type, "cloze")) {
     ids <- gap_ids_in_text(ex$question)
     if (!length(ids) && length(ex$items) > 1L) {
