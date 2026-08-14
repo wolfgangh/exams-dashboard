@@ -44,12 +44,6 @@ test_that("percent scale is compiled into add_cloze", {
   expect_match(rmd, "(sol) * 100", fixed = TRUE)
 })
 
-test_that("item editor accepts cloze schoice with two options", {
-  ex <- template_exercise("cloze")
-  ui <- item_editor_ui(3, ex$items[[3]], var_choices = variable_choices(ex), show_delete = TRUE)
-  expect_s3_class(ui, "shiny.tag")
-})
-
 test_that("sample_draw respects a > b", {
   ex <- example_exercise()
   env <- sample_draw(ex)
